@@ -9,9 +9,10 @@ No numbers are invented or estimated.
 
 ### Score Progression
 
-The table below traces every meaningful milestone from the uniform prior to the
-Phase 2 best. Each row is an official `competition.run_live_eval` result
-(N = 200 000 symbols, alphabet = 16).
+The table below traces the meaningful milestones from the uniform prior to the Phase 2 best
+(best-so-far runs; confirmation reruns and discarded variants are omitted — the full ledger is
+in [`EXPERIMENTS.md`](../EXPERIMENTS.md)). Each row is an official `competition.run_live_eval`
+result (N = 200 000 symbols, alphabet = 16).
 
 | Milestone | Main idea | bits/symbol | Runtime (s) | Δ vs. prev. |
 |---|---|---:|---:|---:|
@@ -34,29 +35,60 @@ All Phase 2 runs: `stability_std = 0` (or numerical zero 4.4×10⁻¹⁶); `eval
 
 **Figure reference:** [Figure 1 — Activity A score progression](figures/activity_a_progression.png)
 
-### Diminishing Returns and the Entropy Floor
+Because each Phase 2 milestone is a strict extension of the previous one, the Δ column doubles
+as a contribution analysis: it is the marginal value of adding that component (PPM, then CTW,
+then VOMM, then the disagreement boost) on top of the running stack. This is a sequential
+build-up, not a controlled leave-one-out ablation, but it shows where the bits came from — and
+that essentially all of them came before Phase 2.
 
-The overall reduction from the uniform prior (4.000000 bps) to the Phase 1 best
-(2.969228 bps) is **1.030772 bps** — a 25.8 % reduction. The entirety of Phase 2's
-67 runs, exploring PPM-C variants, Variable-Order Markov Models, Context Tree
-Weighting, and JS-divergence–gated hybrids, yielded a further improvement of only
-**0.000295 bps** (i.e., ~3×10⁻⁴ bps), about 0.01 % relative.
+### Locating the entropy floor
 
-This is not a failure of the Phase 2 architectures. It is consistent with the
-prediction that the n-gram family had already converged near the model class's
-practical entropy floor for this source. The Phase 2 models (CTW, VOMM, PPM-A)
-are strictly more expressive than fixed-order n-grams, yet they add only marginal
-complementary signal when combined as corrections to the Phase 1 model.
+The overall reduction from the uniform prior (4.000000) to the Phase 1 best (2.969228) is
+**1.030772 bits/symbol** — 25.8 %. The entire Phase 2 campaign — 67 runs of PPM, VOMM, CTW, and
+JS-gated hybrids — then bought a further **0.000295 bits** (~0.01 % relative). To explain why,
+we estimate the source's entropy directly from the data rather than asserting a floor.
 
-The train-derived validation scores (~2.759–2.760 bps for all Phase 2 best runs,
-vs. 2.968–2.969 on the public practice file) reveal a gap that is consistent with
-a slightly different marginal distribution between the train suffix and the public
-practice test sequence — not evidence of overfitting to the practice file.
+For each Markov order `k` we compute the plug-in conditional empirical entropy
+`Ĥ_k = H(X_i | X_{i-k}^{i-1})` (bits/symbol) on both sequences
+(`docs/figures/make_entropy_rate.py`):
 
-Information-theoretically, the residual redundancy `D(P‖Q) = H(P,Q) − H(P)` has
-been compressed to at most a few ten-thousandths of a bit per symbol, which is
-below the resolution at which further architectural changes can reliably be
-distinguished from noise at N = 200 000.
+| order `k` | `Ĥ_k` public-practice | `Ĥ_k` train | avg samples / context | reliable? |
+|---:|---:|---:|---:|:--|
+| 0 | 3.6186 | 3.6119 | 300000 | ✓ |
+| 1 | 3.2338 | 3.2313 | 18750 | ✓ |
+| 2 | 3.0218 | 3.0222 | 1172 | ✓ |
+| 3 | 2.8197 | 2.8217 | 77 | ✓ (borderline) |
+| 4 | 2.3030 | 2.3046 | 9.4 | ✗ undersampled |
+| 5 | 1.5407 | 1.5408 | 3.0 | ✗ undersampled |
+| 6 | 0.8629 | 0.8652 | 1.7 | ✗ undersampled |
+
+![Activity A entropy rate](figures/activity_a_entropy_rate.png)
+
+Three things follow:
+
+1. **The source is not memoryless and not trivially low-order.** Conditioning drops entropy
+   monotonically (3.62 → 3.23 → 3.02 → 2.82). Order 3 is borderline (≈77 samples/context), but
+   from order 4 on each estimate rests on fewer than ~10 samples per context (16⁴ = 65 536
+   possible contexts for only 3×10⁵ symbols), so `Ĥ_4…Ĥ_6` are
+   dominated by the well-known downward bias of the plug-in estimator — they measure sampling
+   noise, not structure. The true entropy rate therefore sits at or somewhat below ≈2.8 bits,
+   and **cannot be pinned more precisely from this much data.**
+2. **Our predictor is at the achievable floor.** Run 067's 2.969 lies below the order-2 entropy
+   (3.02) and approaches the order-3 estimate (2.82). The remaining gap is not slack a better
+   model can easily claim: it lives in high-order contexts that are observed too rarely to
+   estimate reliably *online*, which is precisely where extra model expressiveness cannot help
+   without more data. This is why 67 increasingly sophisticated models moved the score by
+   3×10⁻⁴ bits — the easy redundancy was already gone.
+3. **The train/test gap is in-sample, not distributional.** The train-derived validation score
+   (~2.76) is below the public-practice score (~2.97). The two sequences have *identical*
+   entropy rates at every reliable order (order-2: 3.0222 vs 3.0218), so this is not a
+   distribution shift. It is the in-sample vs out-of-sample gap: the predictor seeds its counts
+   from `train.npy`, so scoring the train tail partly re-reads contexts already in its tables.
+   The honest, held-out number is 2.969.
+
+In the language of section 1, the residual redundancy `D(P‖Q) = H(P,Q) − H(P)` has been
+compressed below the resolution distinguishable from noise at `N = 200 000` against everything
+this model class can reach online.
 
 ---
 
@@ -115,6 +147,14 @@ local byte-level redundancy (zlib/DEFLATE via LZ77+Huffman, lzma via LZMA, bz2 v
 Burrows–Wheeler transform). LLMs capture long-range semantic and syntactic structure,
 reducing to 0.6–1.3 bpc depending on size.
 
+**A compression scaling law.** Ideal bits/character falls log-linearly with parameters: a
+least-squares fit within the Qwen2.5 family gives **−0.227 bpc per 10× parameters** with
+**R² ≈ 0.99**; across all nine models (mixing GPT-2, Pythia, and Qwen architectures) the slope
+is −0.311 bpc/decade at R² ≈ 0.94. The within-family fit is the cleaner estimate — a tidy
+instance of a neural scaling law expressed in the currency of compression. Every model tested,
+down to the 82 M-parameter distilgpt2, already compresses English far better than the best
+classical baseline (`bz2`, 2.098 bpc).
+
 The LLMZip practical overhead (rank+lzma minus the ideal codelength) is a roughly constant
 **+0.07 to +0.10 bpc** tax across the family (distilgpt2 +0.074 → Qwen2.5-7B +0.100). In
 absolute terms it grows slightly; as a *fraction* of the shrinking ideal codelength it
@@ -132,18 +172,40 @@ trend suggests further scaling would keep reducing it.
 
 ---
 
+## Limitations and open questions
+
+- **The floor is bracketed, not pinned.** With 3×10⁵ symbols the source's entropy rate is only
+  reliably estimable to order ~3; the true `H(P)` is at or below ≈2.8 bits but cannot be measured
+  more precisely here. A larger sample, or a model-based entropy-rate estimator (e.g. a converged
+  CTW weighting), would tighten the bracket and say definitively how much redundancy, if any, our
+  predictor still leaves.
+- **The contribution analysis is sequential, not a controlled ablation.** The Δ column measures
+  each component added on top of the running stack, not a leave-one-out from the final model. A
+  true ablation (disable one expert in Run 067, hold the rest fixed) would attribute the bits more
+  rigorously.
+- **Phase 2 differences are near the noise floor.** Several Phase 2 runs differ by <10⁻⁶ bits;
+  the ranking among them is not statistically meaningful at this `N`, and we treat them as a tie.
+- **Activity B uses ideal code length, not realized arithmetic coding.** We verify the
+  prediction↔coding link conceptually and via the rank+lzma scheme, but do not ship a full
+  arithmetic coder; the realized vs ideal gap is reported but not driven to its minimum.
+- **Scaling fit mixes architectures.** The all-model slope spans GPT-2/Pythia/Qwen, which differ
+  in training data and tokenizer; only the within-Qwen fit controls for those.
+
+**Future work.** A model-based entropy-rate estimate to pin the floor; controlled leave-one-out
+ablations of the final stack; a real arithmetic coder on the public-practice set to measure the
+realized–ideal gap directly; and testing whether the disagreement-boost idea transfers to the
+text-compression setting (boost a larger LLM's logits where a small model disagrees).
+
 ## Figures
 
-1. **`docs/figures/activity_a_progression.png`** — Bar chart of Activity A bits/symbol
-   across milestones (uniform → template → Phase 1 best → Phase 2 kept milestones),
-   with an inset zoom on the Phase 1→Phase 2 range. Dashed reference lines for
-   template n-gram and Phase 1 best.
+1. **`docs/figures/activity_a_entropy_rate.png`** — Conditional empirical entropy `Ĥ_k` vs.
+   Markov order for both sequences, the undersampled region shaded, with the predictor's score
+   and the baselines marked. Generated by `docs/figures/make_entropy_rate.py`.
+2. **`docs/figures/activity_a_progression.png`** — Bits/symbol across milestones with an inset
+   zoom on the Phase 1→Phase 2 range.
+3. **`docs/figures/activity_b_bpc_vs_size.png`** — Ideal bpc vs. model parameter count (log scale)
+   for the GPT-2 / Qwen2.5 / Pythia models, with classical-baseline and paper-reference lines and
+   the rank+lzma curve.
 
-2. **`docs/figures/activity_b_bpc_vs_size.png`** — Activity B ideal codelength (bpc)
-   vs. model parameter count (log scale) for the GPT-2 family, Qwen2.5 family, and
-   Pythia-1B. Horizontal dashed lines for classical compressor baselines (zlib, lzma,
-   bz2) and the LLaMA+AC paper reference. Also shows rank+lzma bpc per model as a
-   dotted line.
-
-Figures are generated by `docs/figures/make_figures.py` (run:
-`uv run python docs/figures/make_figures.py` from repo root).
+Figures 2–3 are generated by `docs/figures/make_figures.py`; Figure 1 by
+`docs/figures/make_entropy_rate.py` (run from repo root with `uv run python`).

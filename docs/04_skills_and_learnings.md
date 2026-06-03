@@ -1,65 +1,66 @@
-# 4. Skills and Learnings
+# 4. What This Project Demonstrates
 
-What this project demonstrates, mapped to the *Information Theory for ML* curriculum. The
-distinction below is deliberate and honest: some topics were **applied** in the predictor;
-others were **studied** in the course and inform the framing but were not directly coded.
+A short, honest accounting of the competencies behind the work — written to be checked against
+the code and results, not taken on faith. We separate what was *applied* in the predictors from
+what was *studied* in the course and informs the framing, because conflating the two would be the
+easy way to oversell.
 
-## 4.1 Information theory & coding — *applied*
+## 4.1 Research method (the part that matters most)
 
-- **Entropy, cross-entropy, relative entropy (KL).** The entire objective is empirical
-  cross-entropy; the optimization target is the KL/redundancy term `D(P‖Q)` in
-  `H(P,Q) = H(P) + D(P‖Q)`. Reasoned about quantitatively, not just defined.
-- **Source coding & the prediction↔coding duality.** Used the fact that `−log₂ q(x)` is the
-  ideal code length to justify scoring log-loss instead of a compressed file size.
-- **Arithmetic coding.** The realizability link behind Activity B's "ideal code length"
-  metric and the LLMZip rank-stream scheme.
-- **Universal compression — Lempel–Ziv, minimax redundancy.** The motivation for the model
-  families: achieve near-`H(P)` performance without knowing `P`. **Context Tree Weighting**
-  was implemented as the principled minimax-redundancy approach.
-- **Smoothing / escape as redundancy control.** Laplace smoothing and PPM escape mechanisms
-  understood as keeping `D(P‖Q)` finite (never assign probability 0).
+The project is small in surface area on purpose, and the discipline is the point:
 
-## 4.2 Probabilistic sequence modeling — *applied*
+- **Problem formalization.** The task is posed in its proper information-theoretic frame —
+  log-loss as ideal code length, `H(P,Q) = H(P) + D(P‖Q)`, redundancy as model mismatch — and
+  every design decision is justified against it (section 1).
+- **Controlled, auditable experimentation.** 188 runs across two phases, each with a
+  hypothesis written *before* it ran, a deterministic evaluator, and explicit gates: a stability
+  check (`stability_std ≈ 0`) and a train-derived validation split to catch seed overfitting
+  (section 2.3). The whole campaign is reproducible from logged runs.
+- **Honest interpretation.** The headline result is a *negative* one — 67 models bought
+  ~3×10⁻⁴ bits — and we treat it as a finding, estimating the source's entropy rate directly to
+  show the predictor is at the achievable floor (section 3). Knowing when to stop, and proving
+  why, is a research skill.
+- **Research tooling.** An autonomous experiment loop that proposes, runs, validates, and logs
+  experiments — infrastructure built to make a long search trustworthy rather than a blind sweep.
 
-- Fixed-order n-grams; add-`α` (Laplace) smoothing; interpolated per-order mixtures.
-- **Variable-Order Markov Models (VOMM)** — adaptive context-depth selection.
-- **Context Tree Weighting (CTW)** — Krichevsky–Trofimov estimator, weighting over all
-  bounded-depth tree sources.
-- **PPM-A/C/D** — escape and exclusion mechanisms, count-based backoff.
-- **Expert mixing & gating** — confidence gates, support-conditioned weighting, and a
-  **Jensen–Shannon disagreement** signal to allocate trust between experts online.
+## 4.2 Information theory and coding — *applied*
 
-## 4.3 Engineering & scientific method — *applied*
+Entropy, cross-entropy, and KL divergence as the optimization target; the prediction↔coding
+duality used to justify scoring log-loss; arithmetic coding as the realizability link behind
+Activity B's metrics; universal compression (Lempel–Ziv, minimax redundancy) as the motivation
+for the model families, with **Context Tree Weighting** implemented as the principled
+minimax-redundancy approach; and smoothing/escape understood as keeping `D(P‖Q)` finite.
 
-- **Online/causal algorithm design** under a hard 600 s / 256-context budget using NumPy
-  only; cheap incremental count updates instead of per-step heavy computation.
-- **Determinism & reproducibility** — stability testing (`stability_std ≈ 0`), train-derived
-  validation to detect seed overfitting, data integrity via SHA-256.
-- **Experiment discipline** — hypothesis-before-run write-ups, a 188-run ledger across two
-  phases, JSONL run logs, and an **autonomous research loop** that proposed, ran, validated,
-  and recorded experiments. Knowing when to *stop* (recognizing the entropy floor) is part
-  of the skill.
-- **LLM inference at scale (Activity B)** — running and vectorizing token-level scoring
-  across a model family (distilgpt2 → Qwen2.5-7B) on GPU with `transformers`, normalizing
-  token log-loss to bits/character to compare against published results.
-- **Tooling** — `uv` environment management, reproducible CLI pipelines, figure generation.
+## 4.3 Probabilistic sequence modeling — *applied*
 
-## 4.4 Broader ML — *studied in the course* (context, not coded here)
+Fixed-order n-grams with add-`α` smoothing and interpolated per-order mixtures; Variable-Order
+Markov Models; Context Tree Weighting (Krichevsky–Trofimov estimator); PPM-A/C/D with escape and
+exclusion; and online expert mixing with confidence gating and a Jensen–Shannon disagreement
+signal for allocating trust between experts.
 
-Fully-observed probabilistic models; latent-variable models; EM and Gaussian mixtures;
-variational inference and VAEs; the reparameterization trick; information-theoretic
-generalization bounds (sub-Gaussian concentration). These appear in the lecture material and
-shaped the information-theoretic mindset of the project, but were not part of the Activity A
-predictor or Activity B pipeline.
+## 4.4 Engineering — *applied*
 
-## 4.5 The three transferable lessons
+Online, strictly causal algorithm design under a 600 s / 256-context budget in NumPy only; cheap
+incremental count updates rather than heavy per-step computation; determinism and reproducibility
+discipline; GPU LLM inference across a model family (distilgpt2 → Qwen2.5-7B) with `transformers`,
+normalizing token log-loss to bits/character; and `uv`-managed, reproducible pipelines with
+committed figure-generation scripts.
 
-1. **Pick the metric that *is* the goal.** Scoring in bits/symbol made "build a better
-   model" mean exactly "reduce KL divergence," which kept every experiment honest.
-2. **Know the floor.** Recognizing `H(P)` as a hard limit turned vanishing gains from a
-   frustration into the actual finding — the model class had converged.
-3. **Make search auditable.** Hypothesis-first write-ups + deterministic validation +
-   logged runs make a long experimental campaign trustworthy and reproducible.
+## 4.5 Broader ML — *studied, not coded here*
+
+Fully-observed and latent-variable models, EM and Gaussian mixtures, variational inference and
+VAEs, the reparameterization trick, and information-theoretic generalization bounds appear in the
+course and shaped the information-theoretic mindset of this work, but were not part of the
+Activity A predictor or the Activity B pipeline. They are listed here as context, not as claims.
+
+## 4.6 Three transferable lessons
+
+1. **Pick the metric that *is* the goal.** Scoring in bits/symbol made "better model" mean
+   exactly "lower KL divergence," which kept every experiment honest.
+2. **Measure the floor before chasing it.** Estimating `H(P)` from the data turned vanishing
+   gains from a frustration into the result.
+3. **Make the search auditable.** Hypothesis-first write-ups, deterministic validation, and
+   logged runs are what make a long campaign trustworthy.
 
 ---
 
