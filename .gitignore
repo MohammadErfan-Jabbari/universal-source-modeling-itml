@@ -23,9 +23,7 @@ Thumbs.db
 # Pi / agent local runtime artifacts
 .firecrawl/
 .tmx/
-.pi/*
-!.pi/prompts/
-!.pi/prompts/*.md
+.pi/
 .autoresearch/
 
 # Experiment/runtime outputs; create intentionally when needed

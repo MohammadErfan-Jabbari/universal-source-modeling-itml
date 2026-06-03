@@ -27,12 +27,12 @@ activity_b_llmzip/
     llm_bpc_eval.py
 ```
 
-## One-time environment setup on Centcom
+## One-time environment setup
 
 From repo root:
 
 ```bash
-cd /home/centcom/data/Masters/Information_Theory_for_ML/USM_Challenge
+cd /path/to/universal-source-modeling-itml
 uv pip install -r activity_b_llmzip/requirements.txt
 ```
 
@@ -41,8 +41,8 @@ If PyTorch/CUDA is already installed globally, `uv pip install` may reuse or ins
 Recommended cache location:
 
 ```bash
-export HF_HOME=/home/centcom/data/hf-cache
-export TRANSFORMERS_CACHE=/home/centcom/data/hf-cache/transformers
+export HF_HOME="$HOME/.cache/huggingface"
+export TRANSFORMERS_CACHE="$HOME/.cache/huggingface/transformers"
 ```
 
 ## Step 1: get text8

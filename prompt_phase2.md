@@ -1,6 +1,6 @@
 # Phase 2 Autoresearch Prompt — Copy & Paste into pi
 
-You are in `/home/centcom/data/Masters/Information_Theory_for_ML/USM_Challenge`.
+You are in the repository root.
 
 ## Context
 
