@@ -1,0 +1,6 @@
+{
+  "test_length": 300000,
+  "alphabet_size": 16,
+  "seed": 123,
+  "run_id": "practice_a16_t300000_seed123"
+}

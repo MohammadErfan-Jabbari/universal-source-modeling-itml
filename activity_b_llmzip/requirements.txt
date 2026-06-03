@@ -1,0 +1,8 @@
+# Activity B dependencies. Install from repo root with:
+# uv pip install -r activity_b_llmzip/requirements.txt
+numpy>=2.0
+tqdm>=4.66
+transformers>=4.45
+tokenizers>=0.20
+accelerate>=0.34
+torch>=2.4

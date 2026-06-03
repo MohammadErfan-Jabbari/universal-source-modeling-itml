@@ -1,0 +1,18 @@
+[project]
+name = "itml-usm-challenge"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+]
+
+
+[project.optional-dependencies]
+activity-b = [
+    "numpy>=2.0",
+    "tqdm>=4.66",
+    "transformers>=4.45",
+    "tokenizers>=0.20",
+    "accelerate>=0.34",
+    "torch>=2.4",
+]

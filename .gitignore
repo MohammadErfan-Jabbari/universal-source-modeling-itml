@@ -1,0 +1,63 @@
+# Python / uv environments and caches
+.venv/
+venv/
+env/
+.python-version
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local/editor/OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Pi / agent local runtime artifacts
+.firecrawl/
+.tmx/
+.pi/*
+!.pi/prompts/
+!.pi/prompts/*.md
+.autoresearch/
+
+# Experiment/runtime outputs; create intentionally when needed
+outputs/
+results/
+checkpoints/
+logs/
+runs/
+tmp/
+*.log
+
+# Live-day released data should not be committed by default
+# Keep public practice and generator data tracked, but keep secret/live drops local.
+data/live_release/
+
+# Large local model/artifact drops
+models/
+artifacts/
+
+# Activity B generated data/results/model caches
+activity_b_llmzip/data/*
+!activity_b_llmzip/data/.gitkeep
+activity_b_llmzip/results/*
+!activity_b_llmzip/results/.gitkeep
+activity_b_llmzip/model_cache/
+activity_b_llmzip/**/*.npy
+activity_b_llmzip/**/*.npz
+
+# Copyright: course material kept LOCAL only (professor's slides + OCR lecture notes).
+# These are intentionally untracked and must never be committed to the public repo.
+lectures/
+docs/*.pdf
+
+# Reorg working scratchpad (orchestration notes; not part of the published repo).
+.reorg/
